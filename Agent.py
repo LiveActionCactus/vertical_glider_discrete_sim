@@ -4,7 +4,7 @@ import math
 
 class Agent:
 
-	def __init__(self, agent_id=1, init_state="random_depth", ideal_phase=True):
+	def __init__(self, agent_id=1, init_state="random_depth", ideal_phase=True, sync_dyn=False):
 		# define logical parameters
 		self._id = agent_id;
 
@@ -21,8 +21,8 @@ class Agent:
 		self._theta = 0.0										# rad; initial phase delay in periodic trajectory
 
 		# initialize state
-		self._state = self.set_init_state(init_state)		# pos (m); vel (m/s); ballast mass (kg)
-		self._theta = self.align_phase(ideal_phase)			# if set to true, sets ideal phase delay from inital depth 
+		self._state = self.set_init_state(init_state, sync_dyn)		# pos (m); vel (m/s); ballast mass (kg)
+		self._theta = self.align_phase(ideal_phase)					# if set to true, sets ideal phase delay from inital depth 
 
 
 	def update_state_via_dynamics(self, k, dt, K1=2, K2=1):
@@ -44,13 +44,13 @@ class Agent:
 		err1_ = z1_ - (D_/2.0)*math.cos(omega_*k*dt + theta_) + (D_/2.0)
 		err2_ = z2_ + (D_/2.0)*omega_*math.sin(omega_*k*dt + theta_)	
 		rk2_ = -(D_/2.0)*(omega_**2)*math.cos(omega_*k*dt + theta_)
-		uk_ = (1.0/A_)*( B_*abs(z2_)*z2_ + rk2_ - K1*err1_ -  K2*err2_ );
+		uk_ = (1.0/A_)*( B_*abs(z2_)*z2_ + rk2_ - K1*err1_ -  K2*err2_ )
 
 		# saturate ballast
 		uk_ = max([-1.5, min([uk_, 1.5])])
 
 		self._state[0] = z1_ + dt*z2_
-		self._state[1] = z2_ + dt*(-B_*abs(z2_)*z2_  + A_*uk_);
+		self._state[1] = z2_ + dt*(-B_*abs(z2_)*z2_  + A_*uk_)
 		self._state[2] = uk_
 
 ###
@@ -66,11 +66,17 @@ class Agent:
 			return 0
 
 
-	def set_init_state(self, init_state):
+	def set_init_state(self, init_state, sync_dyn=False):
+		if sync_dyn == True:
+			state_ = np.zeros((4,1))  		# pos, vel, ballast, phase delay
+		else:
+			state_ = np.zeros((3,1))		# pos, vel, ballast, phase delay
+
 		if init_state == "random_depth":
-			depth = -random.randint(0, math.floor(self._max_depth));
-			
-			return np.array([[float(depth)], [0], [0]])
+			depth = -random.randint(0, math.floor(self._max_depth))
+			state_[0] = float(depth);
+
+			return state_
 		
 		else:
-			return np.zeros((3,1))
+			return state_

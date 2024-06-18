@@ -6,7 +6,7 @@ class Plotting():
 		self._sim_env = sim_env 
 
 	def plot_state(self):
-		k = np.linspace(0, self._sim_env._tmax/60, self._sim_env._t)		# TODO: _tmax, dt ; pull from sim env 
+		k = np.linspace(0, self._sim_env._tmax/60, self._sim_env._t)		# defines the simulation length and step size
 
 		fig, axs = plt.subplots(2,2)
 		
