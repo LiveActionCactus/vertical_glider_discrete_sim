@@ -1,0 +1,55 @@
+=== PHYSICAL BUILD ===
+- develop initial design
+	- size of pressure vessel
+	- bouyancy engine
+	- ballast
+	- compute
+	- comms (xbee, ?)
+	- sensors (depth, ?)
+
+- figure out minimum # of gliders (5? therefore 7-8 bc of failure)
+- source & price parts
+
+
+=== ITERATIVE IMPROVMENTS ===
+- implement sliding mode control vs feedback linearization
+- double check the udot implementation, I should be able to full state feedback track the sinusoid
+- 
+
+
+
+
+=== FUNCTIONALITY ===
+- implement state observers 
+
+- implement distributed observer for the fleet; (CAN I JUST CONTROL CONTINUOUSLY ON THE ESTIMATED FLEET STATE?) (ONE SHOT VS. SMOOTH APPROACHES)
+
+
+- implement comms class
+	- include data logging to plot a time-varying network graph
+
+- implement sync class
+	- include synchronization update to dynamics
+
+- implement average phase synchronization (maybe rethink this?)
+
+- XML-like configuration support for simulation
+
+- real-time circulating (S1) plot of agents
+
+
+
+=== LONG SHOT IDEAS ===
+- MPC?
+- can approximate programming / convex optimization / LMI techniques be used to achieve goals (or at least quantify how close we are to goals?)
+- add measurement noise, eg: uncertainty in surfacing times; model as drunkards walk? random process? time-optimal way to do this?
+- demos example of mapping pendulum to S1; we can map any periodic trajectory to S1, might change radius of circle and rotation rate
+	- not sure what to do with this, but feels important
+
+
+=== QUESTIONS ===
+- how well can each glider do distributed estimation locally? 
+	- what information fully determines a vertical gliders position? 
+	- how does the distributed observer breakdown w/ increasing noise and decreasing comms?
+
+- what is the role of the "spoiler" (faster/slower) vertical glider in the connectedness of the graph?

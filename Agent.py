@@ -6,7 +6,10 @@ class Agent:
 
 	def __init__(self, agent_id=1, init_state="random_depth", ideal_phase=True, sync_dyn=False):
 		# define logical parameters
-		self._id = agent_id;
+		self._id = agent_id
+		self._on_surface = False							# TODO: maybe better as a more general "comms_available" parameter
+		#self._comms = comms  								# enable/disable inter-agent communications (TODO: add options for "continuous" vs. discrete/on-surface)
+		self._sync_dyn = sync_dyn 							# enable/disable synchronizing dynamics
 
 		# define physical parameters
 		self._g = 9.81										# m/s^2; gravity
@@ -53,6 +56,8 @@ class Agent:
 		self._state[1] = z2_ + dt*(-B_*abs(z2_)*z2_  + A_*uk_)
 		self._state[2] = uk_
 
+		self.update_on_surface(self._state[0])
+
 ###
 # HELPER FUNCTIONS
 ###
@@ -76,7 +81,13 @@ class Agent:
 			depth = -random.randint(0, math.floor(self._max_depth))
 			state_[0] = float(depth);
 
-			return state_
-		
+		self.update_on_surface(state_[0])
+
+		return state_
+
+
+	def update_on_surface(self, depth):
+		if depth > -2E-10:
+			self._on_surface = True
 		else:
-			return state_
+			self._on_surface = False
