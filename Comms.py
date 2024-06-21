@@ -2,35 +2,49 @@ import numpy as np
 
 class Comms:
 
-	def __init__(self, sim_length, agents, log_comms=True):
-		self._sim_length = sim_length
+	# empty constructor because we need to pass comms to agents before all agents initialized; prevents circular condition
+	def __init__(self):
+		self.agents = None
+		self._num_agents = None
+		self._on_surface = None
+		
+		# define logging
+		self._log_comms = None
+
+
+	def delayed_init(self, sim_length, agents=None, log_comms=True):
+		# self._sim_length = sim_length
 		self.agents = agents
 		self._num_agents = len(self.agents)
-		#self.inst_adj_mat = np.zeros((self._num_agents, self._num_agents))				# TODO: probably only necessary for networkx plotting
 		self._on_surface = np.zeros(self._num_agents)
 		
 		# define logging
 		self._log_comms = log_comms
 		if self._log_comms == True:
-			self._on_surface_log = self.initialize_comms_logging()	# for on-surface communications only; change to triu for more comprehensive logging
+			self._on_surface_log = self.initialize_comms_logging(sim_length)	# for on-surface communications only; change to triu for more comprehensive logging
 
 
-	# TODO: I'm not sure what a "comms update" should entail. Minimum logging for complete reconstruction is "_on_surface". Must be called from sim_env
+	# TODO: I'm not sure what a "comms update" should entail. Minimum logging for complete reconstruction is just "_on_surface". Must be called from sim_env
 	def update_comms(self, k):
 		self.update_on_surface_list()
-		#triu = self.surface_list_to_triu()
 
 		if self._log_comms == True:
 			self._on_surface_log[k,:] = self._on_surface
 
 
-	# # TODO: force information state by only sharing information if glider on surface, and only with other gliders on surface. Zero/None out everything else.
-	# def get_in_comms_with_update(self):
-	# 	in_comms_state_ = []
-	# 	for i in range(0,self._num_agents):
-	# 		in_comms_state_.append((self._on_surface[i], self.agents[i]._state))
+	# returns list of tuples of agents currently in comms with; empty otherwise 				# TODO: add continuous vs discrete functionality; cont. pass all info 
+	def get_in_comms_with_update(self, agent_id):
+		id_ = agent_id
+		in_comms_state_ = []
 
-	# 	return in_comms_state_
+		for i in range(0,self._num_agents):
+			if (self._on_surface[id_] == 0) or (self._on_surface[i] == 0) or (i == id_):
+				pass
+			else:
+				#in_comms_state_.append((i, self.agents[i]._state, ))					# TODO: doesn't make sense to pass state? everyone is on the surface; could pass comms adj mat w/ horizons
+				in_comms_state_.append((i, self.agents[i]._surface_time_elapsed ))		# stay on surface till most recently surfaced glider submerges
+
+		return in_comms_state_
 
 
 	#####
@@ -75,5 +89,12 @@ class Comms:
 		return adj_mat
 
 
-	def initialize_comms_logging(self):
-		return np.zeros((self._sim_length, self._num_agents))
+	def initialize_comms_logging(self, sim_length):
+		return np.zeros((sim_length, self._num_agents))
+
+
+	def log_comms_values(self, k):
+		if self._log_comms == True:
+			self._on_surface_log[k,:] = self._on_surface
+		else:
+			raise Exception(f"Cannot log comms values, _log_comms is set to {self._log_comms}")
