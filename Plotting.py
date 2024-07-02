@@ -35,5 +35,11 @@ class Plotting():
 			if self._sim_env._num_agents < 5:
 				axs[1,0].legend()
 
+			# plot phase
+			axs[1,1].plot(k, agent[3,:], label='Agent {0}'.format(i))
+			axs[1,1].set(xlabel='Time (min)', ylabel='Phase (rad)')
+			axs[1,1].set_title('Phase vs. Time')
+			if self._sim_env._num_agents < 5:
+				axs[1,0].legend()
 
 		plt.show(block="True")

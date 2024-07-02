@@ -6,7 +6,7 @@ class Comms:
 	def __init__(self):
 		self.agents = None
 		self._num_agents = None
-		self._on_surface = None
+		self._on_surface = None 			# TODO: comms value only; don't confuse with var in Agent 
 		
 		# define logging
 		self._log_comms = None
@@ -41,8 +41,7 @@ class Comms:
 			if (self._on_surface[id_] == 0) or (self._on_surface[i] == 0) or (i == id_):
 				pass
 			else:
-				#in_comms_state_.append((i, self.agents[i]._state, ))					# TODO: doesn't make sense to pass state? everyone is on the surface; could pass comms adj mat w/ horizons
-				in_comms_state_.append((i, self.agents[i]._surface_time_elapsed ))		# stay on surface till most recently surfaced glider submerges
+				in_comms_state_.append((i, self.agents[i].state_machine._on_surface_params["surface_time_ctr"] ))		# stay on surface till most recently surfaced glider submerges
 
 		return in_comms_state_
 
@@ -53,7 +52,7 @@ class Comms:
 
 	def update_on_surface_list(self):
 		for i in range(0, self._num_agents):
-			if self.agents[i]._on_surface == True:
+			if self.agents[i].state_machine._ready_for_comms == True:
 				self._on_surface[i] = 1
 			else:
 				self._on_surface[i] = 0

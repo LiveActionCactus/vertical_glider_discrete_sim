@@ -1,3 +1,4 @@
+from AgentStateMachine import AgentStateMachine
 from Sync import Sync
 import numpy as np
 import random
@@ -8,7 +9,6 @@ class Agent:
 	def __init__(self, agent_id=1, comms=None, init_state="random_depth", ideal_phase=True, sync_dyn=False):
 		# define functionality/logical parameters
 		self._id = agent_id
-		self._on_surface = False							# TODO: maybe better as a more general "comms_available" parameter
 		
 		self.comms = comms  								# enable/disable inter-agent communications (TODO: add options for "continuous" vs. discrete/on-surface)
 		self._comms_list = None								#
@@ -17,57 +17,57 @@ class Agent:
 		if sync_dyn:
 			self.sync = Sync()
 
-
 		# define physical parameters
 		self._g = 9.81										# m/s^2; gravity
 		self._m3 = 14.0 									# kg; vertical component of glider mass
 		self._A = self._g / self._m3						# TODO
 		self._B = 1.0										# TODO
-		self._max_depth = 200.0 #100.0								# meters; 
+		self._max_depth = 100.0								# meters; 
 
 		# define trajectory parameters
-		self._dive_time = 30.0 #15.0									# minutes to reach max depth from surface
+		self._dive_time = 15.0									# minutes to reach max depth from surface
 		self._omega = 2.0*math.pi / (60.0*2.0*self._dive_time)	# angular frequency of sinusoidal trajectory to track
-		self._theta = 0.0										# rad; initial phase delay in periodic trajectory
-
-		# define surface hold and parameters to help clear the surface
-		self._surface_time_elapsed = 0 						# time in seconds on the surface; could possibly be reset by synchronizing control law
-		self._surface_hold_threshold = 120					# time in seconds to hold on the surface # TODO: SOMETHING IS WRONG WITH HOW THIS GETS CALCULATED ~ 5 MINUTES
-		self._clearing_surface = False
-		self._dive_time_ctr = 0								# give time (seconds) to get clear from surface to prevent control system chattering; helps state machine transition 
-		self._dive_time_threshold = 60
+		self._theta0 = 0.0										# rad; initial phase delay in periodic trajectory
 
 		# initialize state
-		self._state = self.set_init_state(init_state, sync_dyn)		# pos (m); vel (m/s); ballast mass (kg)
-		self._theta = self.align_phase(ideal_phase)					# if set to true, sets ideal phase delay from inital depth 
+		self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
+		self._theta0 = self._state[3]									# initial phase					
+
+		self.state_machine = AgentStateMachine(self._state)			# all agents initialized diving
 
 
 	def update_state_via_comms_and_dynamics(self, k, dt):
-		if not self._clearing_surface and self._on_surface: 													# glider on the surface observing
-			
-			if self._comms_list and self._sync_dyn:																# synchronizing w/ comms info
-				self._surface_time_elapsed = self.sync.max_surface_hold(self._comms_list, self._surface_time_elapsed)
-			
-			if self._surface_time_elapsed >= self._surface_hold_threshold: 										# surface time has elapsed; start diving
-				self._clearing_surface = True
-				self._dive_time_ctr = 0
-				self._surface_time_elapsed = 0
+		if self.state_machine._on_surface:
 
-			self._surface_time_elapsed = self._surface_time_elapsed + dt  										# run surface time counter
-			self._state[0:3] = 0 										# glider is stationary
-			self._theta	= self._theta - self._omega*dt 					# updates phase delay to account for surface time (a functional delay in phase of the trajectory)
+			# comms update
+			if self.state_machine._ready_for_comms:
+				self._comms_list = self.comms.get_in_comms_with_update(self._id)
 
-		else:  																									# glider is not on the surface observing; therefore, diving
-			if self._dive_time_ctr < self._dive_time_threshold:  												# dive time counter
-				self._dive_time_ctr = self._dive_time_ctr + dt
-			else:
-				self._clearing_surface = False
+			# sync update
+			if self.state_machine._ready_for_sync_update:
+				# Max hold strategy
+				self.state_machine._on_surface_params["surface_time_ctr"] = self.sync.max_surface_hold(self._comms_list, self.state_machine._on_surface_params["surface_time_ctr"])
 
+				# TODO: implement ring topology; then implement controller to evenly space phases; then implement estimators for cases 1) and 2)
+				pass
+
+			# dynamics update
+			self._state[0:3] = 0 											# glider is stationary
+			self._state[3] = self._state[3] - self._omega*dt
+			#self._theta0 = self._theta0 - self._omega*dt 					# updates phase delay to account for surface time (a functional delay in phase of the trajectory)
+			# TODO change this to state
+
+			# state machine update
+			self.state_machine.update_state_machine(k, dt)
+
+		else: # diving
+
+			# dynamics update
 			self.update_dynamics_via_feedback_linearization(k, dt, K1=2, K2=1)									# glider is moving
 
-		# comms -- if possible											# NOTE: basically impossible to get comms w/o surface hold
-		self.update_on_surface(self._state[0])
-		self._comms_list = self.comms.get_in_comms_with_update(self._id)	
+			# state machine update
+			self.state_machine.update_state_machine(k, dt)
+
 
 
 	def update_dynamics_via_feedback_linearization(self, k, dt, K1=2, K2=1):
@@ -75,6 +75,7 @@ class Agent:
 		z1_ = self._state[0] #+ np.random.normal(0,0.05,1)	# mean, std dev, # samples
 		z2_ = self._state[1]
 		u_ = self._state[2] 			# TODO: will need to add omega and theta to the state as these become variable
+		theta_ = self._state[3]
 
 		# saturate position
 		z1_ = min([0, z1_])
@@ -83,7 +84,7 @@ class Agent:
 		B_ = self._B
 		D_ = self._max_depth
 		omega_ = self._omega
-		theta_ = self._theta
+		# theta_ = self._theta
 
 		# pre-compute terms in the state update
 		err1_ = z1_ - (D_/2.0)*math.cos(omega_*k*dt + theta_) + (D_/2.0)
@@ -97,37 +98,34 @@ class Agent:
 		self._state[0] = z1_ + dt*z2_
 		self._state[1] = z2_ + dt*(-B_*abs(z2_)*z2_  + A_*uk_)
 		self._state[2] = uk_
+		self._state[3] = theta_ % (2*math.pi) 			# TODO: should I be computing this?
 
 ###
 # HELPER FUNCTIONS
 ###
 	
-	def align_phase(self, ideal_phase):
+	def align_phase(self, state, ideal_phase):
 		if ideal_phase:
-			ang = (2.0*self._state[0] / self._max_depth) + 1.0 		# recovers ideal phase delay from initial depth (NOTE: depth must be negative)
-			return math.acos(ang)
+			arg = (2.0*state[0] / self._max_depth) + 1.0 		# recovers ideal phase delay from initial depth (NOTE: depth must be negative)
+			ang = math.acos(arg)								# produces angle in [0, pi], need other half of the unit circle
+			ang = ang #+ random.randint(0,1)*math.pi 			# TODO: figure out why this is producing such large tracking errors
+			# ang = (random.randint(0,2) - 1)*ang
+
+			return ang
 
 		else:
 			return 0
 
 
-	def set_init_state(self, init_state, sync_dyn=False):
-		if sync_dyn == True:
-			state_ = np.zeros((4,1))  		# pos, vel, ballast, phase delay
-		else:
-			state_ = np.zeros((3,1))		# pos, vel, ballast, phase delay
+	def set_init_state(self, init_state, ideal_phase):
+		state_ = np.zeros((4,1))  		# pos, vel, ballast, phase delay
 
 		if init_state == "random_depth":
 			depth = -random.randint(0, math.floor(self._max_depth))
 			state_[0] = float(depth);
 
-		self.update_on_surface(state_[0])
+		state_[3] = self.align_phase(state_, ideal_phase)
 
 		return state_
 
 
-	def update_on_surface(self, depth):
-		if depth > -2E-10:
-			self._on_surface = True
-		else:
-			self._on_surface = False

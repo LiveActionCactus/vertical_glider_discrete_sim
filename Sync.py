@@ -13,3 +13,8 @@ class Sync():
 				new_surface_time_elapsed = comm[1]
 
 		return new_surface_time_elapsed
+
+
+	def wait_until_ring_topology(self, comms_list):
+		print(comms_list)
+		input()

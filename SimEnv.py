@@ -7,10 +7,10 @@ class SimEnv:
 
 	def __init__(self):
 		# define simulation parameters
-		self._tmax = 200*60								# minutes*(seconds) to run simulation
+		self._tmax = 100*60								# minutes*(seconds) to run simulation
 		self._dt = 0.2									# sampling / discretization rate of simulation
 		self._t = math.floor(self._tmax / self._dt)		# total indices required to run simulation
-		self._num_agents = 20
+		self._num_agents = 2
 
 		# define agents and comms
 		self._sync_dyn = True							# enable/disable syncronizing dynamics
@@ -41,7 +41,7 @@ class SimEnv:
 			self.comms.update_comms(k)									# update communications; needs to come before dynamics update so dynamics step is well informed
 
 			for i in range(self._num_agents):	
-				self.log_state_values(k, i)										# store state information
+				self.log_state_values(k, i)											# store state information
 				self.agents[i].update_state_via_comms_and_dynamics(k, self._dt) 	# update agent dynamics
 
 
