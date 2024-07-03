@@ -3,6 +3,7 @@ from Sync import Sync
 import numpy as np
 import random
 import math
+import time
 
 class Agent:
 
@@ -27,11 +28,15 @@ class Agent:
 		# define trajectory parameters
 		self._dive_time = 15.0									# minutes to reach max depth from surface
 		self._omega = 2.0*math.pi / (60.0*2.0*self._dive_time)	# angular frequency of sinusoidal trajectory to track
-		self._theta0 = 0.0										# rad; initial phase delay in periodic trajectory
+		# self._theta0 = 0.0										# rad; initial phase delay in periodic trajectory
 
 		# initialize state
 		self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
-		self._theta0 = self._state[3]									# initial phase					
+		# self._theta0 = self._state[3]									# initial phase	
+		
+		# TEST
+		# self._state[0] = -91.0
+		# self._state[3] = -2.5322	
 
 		self.state_machine = AgentStateMachine(self._state)			# all agents initialized diving
 
@@ -46,7 +51,7 @@ class Agent:
 			# sync update
 			if self.state_machine._ready_for_sync_update:
 				# Max hold strategy
-				self.state_machine._on_surface_params["surface_time_ctr"] = self.sync.max_surface_hold(self._comms_list, self.state_machine._on_surface_params["surface_time_ctr"])
+				#self.state_machine._on_surface_params["surface_time_ctr"] = self.sync.max_surface_hold(self._comms_list, self.state_machine._on_surface_params["surface_time_ctr"])
 
 				# TODO: implement ring topology; then implement controller to evenly space phases; then implement estimators for cases 1) and 2)
 				pass
@@ -54,7 +59,7 @@ class Agent:
 			# dynamics update
 			self._state[0:3] = 0 											# glider is stationary
 			self._state[3] = self._state[3] - self._omega*dt
-			#self._theta0 = self._theta0 - self._omega*dt 					# updates phase delay to account for surface time (a functional delay in phase of the trajectory)
+			# self._theta0 = self._theta0 - self._omega*dt 					# updates phase delay to account for surface time (a functional delay in phase of the trajectory)
 			# TODO change this to state
 
 			# state machine update
@@ -98,7 +103,7 @@ class Agent:
 		self._state[0] = z1_ + dt*z2_
 		self._state[1] = z2_ + dt*(-B_*abs(z2_)*z2_  + A_*uk_)
 		self._state[2] = uk_
-		self._state[3] = theta_ % (2*math.pi) 			# TODO: should I be computing this?
+		self._state[3] = theta_ 			# TODO: should I be wrapping theta to [-pi, pi) ?
 
 ###
 # HELPER FUNCTIONS
@@ -108,11 +113,9 @@ class Agent:
 		if ideal_phase:
 			arg = (2.0*state[0] / self._max_depth) + 1.0 		# recovers ideal phase delay from initial depth (NOTE: depth must be negative)
 			ang = math.acos(arg)								# produces angle in [0, pi], need other half of the unit circle
-			ang = ang #+ random.randint(0,1)*math.pi 			# TODO: figure out why this is producing such large tracking errors
-			# ang = (random.randint(0,2) - 1)*ang
+			ang = ( (-1)**(random.randint(0,1)) )*ang
 
 			return ang
-
 		else:
 			return 0
 

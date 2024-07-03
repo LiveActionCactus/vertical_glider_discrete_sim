@@ -10,7 +10,7 @@ class SimEnv:
 		self._tmax = 100*60								# minutes*(seconds) to run simulation
 		self._dt = 0.2									# sampling / discretization rate of simulation
 		self._t = math.floor(self._tmax / self._dt)		# total indices required to run simulation
-		self._num_agents = 2
+		self._num_agents = 10
 
 		# define agents and comms
 		self._sync_dyn = True							# enable/disable syncronizing dynamics
