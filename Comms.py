@@ -38,10 +38,10 @@ class Comms:
 		in_comms_state_ = []
 
 		for i in range(0,self._num_agents):
-			if (self._on_surface[id_] == 0) or (self._on_surface[i] == 0) or (i == id_):
+			if (self._on_surface[id_] == 0) or (self._on_surface[i] == 0): 		# includes self in comms, makes graph/network calculations easier
 				pass
 			else:
-				in_comms_state_.append((i, self.agents[i].state_machine._on_surface_params["surface_time_ctr"] ))		# stay on surface till most recently surfaced glider submerges
+				in_comms_state_.append( [i, self.agents[i].state_machine._on_surface_params["surface_time_ctr"] ] )		# stay on surface till most recently surfaced glider submerges
 
 		return in_comms_state_
 

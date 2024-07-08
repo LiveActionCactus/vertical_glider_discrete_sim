@@ -16,7 +16,7 @@ class Agent:
 		
 		self._sync_dyn = sync_dyn
 		if sync_dyn:
-			self.sync = Sync()
+			self.sync = Sync(comms)
 
 		# define physical parameters
 		self._g = 9.81										# m/s^2; gravity
@@ -28,15 +28,9 @@ class Agent:
 		# define trajectory parameters
 		self._dive_time = 15.0									# minutes to reach max depth from surface
 		self._omega = 2.0*math.pi / (60.0*2.0*self._dive_time)	# angular frequency of sinusoidal trajectory to track
-		# self._theta0 = 0.0										# rad; initial phase delay in periodic trajectory
 
 		# initialize state
 		self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
-		# self._theta0 = self._state[3]									# initial phase	
-		
-		# TEST
-		# self._state[0] = -91.0
-		# self._state[3] = -2.5322	
 
 		self.state_machine = AgentStateMachine(self._state)			# all agents initialized diving
 
@@ -47,6 +41,8 @@ class Agent:
 			# comms update
 			if self.state_machine._ready_for_comms:
 				self._comms_list = self.comms.get_in_comms_with_update(self._id)
+			else:
+				self._comms_list = [] 					# have to clear the comms list when diving
 
 			# sync update
 			if self.state_machine._ready_for_sync_update:
@@ -54,13 +50,12 @@ class Agent:
 				#self.state_machine._on_surface_params["surface_time_ctr"] = self.sync.max_surface_hold(self._comms_list, self.state_machine._on_surface_params["surface_time_ctr"])
 
 				# TODO: implement ring topology; then implement controller to evenly space phases; then implement estimators for cases 1) and 2)
-				pass
+				self.sync.wait_until_ring_topology(k, dt, self._id, self.state_machine, self._comms_list)
+
 
 			# dynamics update
 			self._state[0:3] = 0 											# glider is stationary
 			self._state[3] = self._state[3] - self._omega*dt
-			# self._theta0 = self._theta0 - self._omega*dt 					# updates phase delay to account for surface time (a functional delay in phase of the trajectory)
-			# TODO change this to state
 
 			# state machine update
 			self.state_machine.update_state_machine(k, dt)
@@ -89,7 +84,6 @@ class Agent:
 		B_ = self._B
 		D_ = self._max_depth
 		omega_ = self._omega
-		# theta_ = self._theta
 
 		# pre-compute terms in the state update
 		err1_ = z1_ - (D_/2.0)*math.cos(omega_*k*dt + theta_) + (D_/2.0)
