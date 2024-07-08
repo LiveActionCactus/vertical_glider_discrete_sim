@@ -30,7 +30,8 @@ class Agent:
 		self._omega = 2.0*math.pi / (60.0*2.0*self._dive_time)	# angular frequency of sinusoidal trajectory to track
 
 		# initialize state
-		self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
+		# self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
+		self._state = self.troubleshooting_init_state()
 
 		self.state_machine = AgentStateMachine(self._state)			# all agents initialized diving
 
@@ -52,10 +53,9 @@ class Agent:
 				# TODO: implement ring topology; then implement controller to evenly space phases; then implement estimators for cases 1) and 2)
 				self.sync.wait_until_ring_topology(k, dt, self._id, self.state_machine, self._comms_list)
 
-
 			# dynamics update
 			self._state[0:3] = 0 											# glider is stationary
-			self._state[3] = self._state[3] - self._omega*dt
+			self._state[3] = self._state[3] - self._omega*dt 				# need to delay trajectory phase to eliminate error accumulation 
 
 			# state machine update
 			self.state_machine.update_state_machine(k, dt)
@@ -126,3 +126,28 @@ class Agent:
 		return state_
 
 
+	def troubleshooting_init_state(self):
+		state_ = np.zeros((4,1))  		# pos, vel, ballast, phase delay
+
+		if self._id == 0:
+			state_[0] = -74.0
+			state_[1] = 0.0
+			state_[2] = 0.0
+			state_[3] = 2.07145104
+		elif self._id == 1:
+			state_[0] = -8.0
+			state_[1] = 0.0
+			state_[2] = 0.0
+			state_[3] = 0.5735131
+		elif self._id == 2:
+			state_[0] = -69.0
+			state_[1] = 0.0
+			state_[2] = 0.0
+			state_[3] = -1.96059262
+		elif self._id == 3:
+			state_[0] = -100.0
+			state_[1] = 0.0
+			state_[2] = 0.0
+			state_[3] = -3.14159265
+
+		return state_
