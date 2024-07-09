@@ -23,7 +23,7 @@ class Sync():
 		return new_surface_time_elapsed
 
 
-	def wait_until_ring_topology(self, k, dt, agent_id, state_machine, comms_list):
+	def wait_until_ring_topology(self, state_machine, comms_list):
 		if state_machine._on_surface_params["surface_time_ctr"] == 0:
 			self._prev_on_surface = copy.copy(self.comms._on_surface) 				# have to copy because we need to see time differences in this information
 			self._order_in_dive_queue = len(comms_list)

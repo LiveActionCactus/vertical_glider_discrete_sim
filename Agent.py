@@ -51,7 +51,7 @@ class Agent:
 				#self.state_machine._on_surface_params["surface_time_ctr"] = self.sync.max_surface_hold(self._comms_list, self.state_machine._on_surface_params["surface_time_ctr"])
 
 				# TODO: implement ring topology; then implement controller to evenly space phases; then implement estimators for cases 1) and 2)
-				self.sync.wait_until_ring_topology(k, dt, self._id, self.state_machine, self._comms_list)
+				self.sync.wait_until_ring_topology(self.state_machine, self._comms_list)
 
 			# dynamics update
 			self._state[0:3] = 0 											# glider is stationary
