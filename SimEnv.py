@@ -7,10 +7,10 @@ class SimEnv:
 
 	def __init__(self):
 		# define simulation parameters
-		self._tmax = 200*60								# minutes*(seconds) to run simulation
+		self._tmax = 300*60								# minutes*(seconds) to run simulation
 		self._dt = 0.2									# sampling / discretization rate of simulation
 		self._t = math.floor(self._tmax / self._dt)		# total indices required to run simulation
-		self._num_agents = 4
+		self._num_agents = 5
 
 		# define agents and comms
 		self._sync_dyn = True							# enable/disable syncronizing dynamics

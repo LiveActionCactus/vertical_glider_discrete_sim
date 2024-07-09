@@ -32,8 +32,8 @@ class Plotting():
 			axs[1,0].plot(k, agent[2,:], label='Agent {0}'.format(i))
 			axs[1,0].set(xlabel='Time (min)', ylabel='Ballast (kg)')
 			axs[1,0].set_title('Ballast vs. Time')
-			if self._sim_env._num_agents < 5:
-				axs[1,0].legend()
+			# if self._sim_env._num_agents < 5:
+			axs[1,0].legend()
 
 			# plot phase
 			axs[1,1].plot(k, agent[3,:], label='Agent {0}'.format(i))

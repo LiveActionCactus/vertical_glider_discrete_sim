@@ -30,8 +30,8 @@ class Agent:
 		self._omega = 2.0*math.pi / (60.0*2.0*self._dive_time)	# angular frequency of sinusoidal trajectory to track
 
 		# initialize state
-		# self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
-		self._state = self.troubleshooting_init_state()
+		self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
+		# self._state = self.troubleshooting_init_state()
 
 		self.state_machine = AgentStateMachine(self._state)			# all agents initialized diving
 
