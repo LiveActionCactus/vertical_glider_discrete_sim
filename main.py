@@ -6,14 +6,11 @@ import pickle
 data_path = './data/GOOD_10agents_200min_waituntil.pkl'
 
 def pickle_results(sim):
-	sim_ = sim
-	state_log_ = sim._state_log
-	on_surface_log_ = sim.comms._on_surface_log
-	data = [sim_, state_log_, on_surface_log_]
+	data = sim
 
 	with open(data_path, 'wb') as f:
 		pickle.dump(data, f)
-	f.close
+	f.close()
 
 def load_pickle_results():
 	with open(data_path, 'rb') as f:
@@ -32,5 +29,6 @@ if __name__ == "__main__":
 	sim = data[0]
 
 	plt = Plotting(sim)
-	plt.plot_time_varying_graph()
 	# plt.plot_state()
+	# plt.plot_time_varying_graph()
+	plt.plot_graph_edges_as_random()
