@@ -1,36 +1,36 @@
 from AgentStateMachine import AgentStateMachine
 from Sync import Sync
 import numpy as np
-import random
 import math
-import time
 
 class Agent:
 
-	def __init__(self, agent_id=1, comms=None, init_state="random_depth", ideal_phase=True, sync_dyn=False):
+	def __init__(self, agent_id=1, comms=None, init_state=np.zeros((4,1)), sync_dyn=False, max_depth=100):
 		# define functionality/logical parameters
 		self._id = agent_id
 		
 		self.comms = comms  								# enable/disable inter-agent communications (TODO: add options for "continuous" vs. discrete/on-surface)
-		self._comms_list = None								#
+		self._comms_list = None								# list of agents on surface and communicating, including self
 		
 		self._sync_dyn = sync_dyn
 		if sync_dyn:
 			self.sync = Sync(comms)
 
+		# TODO: physical parameters should be passed in from SimEnv on initialization
 		# define physical parameters
 		self._g = 9.81										# m/s^2; gravity
 		self._m3 = 14.0 									# kg; vertical component of glider mass
 		self._A = self._g / self._m3						# TODO
 		self._B = 1.0										# TODO
-		self._max_depth = 100.0								# meters; 
+		self._max_depth = max_depth							# meters; 
 
 		# define trajectory parameters
 		self._dive_time = 15.0									# minutes to reach max depth from surface
 		self._omega = 2.0*math.pi / (60.0*2.0*self._dive_time)	# angular frequency of sinusoidal trajectory to track
 
 		# initialize state
-		self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
+		self._state = init_state
+		# self._state = self.set_init_state(init_state, ideal_phase)		# pos (m); vel (m/s); ballast mass (kg); phase (rad)
 		# self._state = self.troubleshooting_init_state()
 
 		self.state_machine = AgentStateMachine(self._state)			# all agents initialized diving
@@ -51,7 +51,11 @@ class Agent:
 				#self.state_machine._on_surface_params["surface_time_ctr"] = self.sync.max_surface_hold(self._comms_list, self.state_machine._on_surface_params["surface_time_ctr"])
 
 				# TODO: implement ring topology; then implement controller to evenly space phases; then implement estimators for cases 1) and 2)
-				self.sync.wait_until_ring_topology(self.state_machine, self._comms_list)
+				# self.sync.wait_until_ring_topology(self.state_machine, self._comms_list)
+
+				# wait until strategy w/ M agents increasing conenctivity
+				# TODO: M=0 should recover "wait_until_ring_topology" results
+				self.sync.wait_until_M_outliers(M=1, agent_id=self._id, state_machine=self.state_machine, comms_list=self._comms_list)
 
 			# dynamics update
 			self._state[0:3] = 0 											# glider is stationary
@@ -99,55 +103,8 @@ class Agent:
 		self._state[2] = uk_
 		self._state[3] = theta_ 			# TODO: should I be wrapping theta to [-pi, pi) ?
 
+
 ###
 # HELPER FUNCTIONS
 ###
 	
-	def align_phase(self, state, ideal_phase):
-		if ideal_phase:
-			arg = (2.0*state[0] / self._max_depth) + 1.0 		# recovers ideal phase delay from initial depth (NOTE: depth must be negative)
-			ang = math.acos(arg)								# produces angle in [0, pi], need other half of the unit circle
-			ang = ( (-1)**(random.randint(0,1)) )*ang
-
-			return ang
-		else:
-			return 0
-
-
-	def set_init_state(self, init_state, ideal_phase):
-		state_ = np.zeros((4,1))  		# pos, vel, ballast, phase delay
-
-		if init_state == "random_depth":
-			depth = -random.randint(0, math.floor(self._max_depth))
-			state_[0] = float(depth);
-
-		state_[3] = self.align_phase(state_, ideal_phase)
-
-		return state_
-
-
-	def troubleshooting_init_state(self):
-		state_ = np.zeros((4,1))  		# pos, vel, ballast, phase delay
-
-		if self._id == 0:
-			state_[0] = -74.0
-			state_[1] = 0.0
-			state_[2] = 0.0
-			state_[3] = 2.07145104
-		elif self._id == 1:
-			state_[0] = -8.0
-			state_[1] = 0.0
-			state_[2] = 0.0
-			state_[3] = 0.5735131
-		elif self._id == 2:
-			state_[0] = -69.0
-			state_[1] = 0.0
-			state_[2] = 0.0
-			state_[3] = -1.96059262
-		elif self._id == 3:
-			state_[0] = -100.0
-			state_[1] = 0.0
-			state_[2] = 0.0
-			state_[3] = -3.14159265
-
-		return state_

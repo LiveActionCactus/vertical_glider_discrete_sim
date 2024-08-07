@@ -16,6 +16,7 @@ class Plotting():
 		k_ = np.linspace(0, self._sim_env._tmax/60, self._sim_env._t)		# defines the simulation length and step size
 
 		fig_, axs_ = plt.subplots(2,2)
+		fig_.subplots_adjust(left=0.125, bottom=0.07, right=0.9, top=0.927, wspace=0.198, hspace=0.251)
 		
 		for i in range(0, self._sim_env._num_agents):
 			agent_ = self._sim_env._state_log[:,:,i]

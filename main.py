@@ -19,16 +19,19 @@ def load_pickle_results():
 
 	return data
 
+gen_new_data = True
+
 if __name__ == "__main__":
-	# sim = SimEnv();
-
-	# sim.run_sim()
-	# pickle_results(sim)
-
-	data = load_pickle_results()
-	sim = data[0]
+	# generate new data, or use old
+	if gen_new_data:
+		sim = SimEnv();
+		sim.run_sim()
+		pickle_results(sim)
+	else:
+		data = load_pickle_results()
+		sim = data
 
 	plt = Plotting(sim)
-	# plt.plot_state()
+	plt.plot_state()
 	# plt.plot_time_varying_graph()
-	plt.plot_graph_edges_as_random()
+	# plt.plot_graph_edges_as_random()
